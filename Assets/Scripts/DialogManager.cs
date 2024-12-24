@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
+using System.Threading;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -15,113 +17,156 @@ public class DialogueManager : MonoBehaviour
     public GameObject character1;
     public GameObject character2;
     public GameObject background;
+    public GameObject dialogMenu;
+    public GameObject logicManager;
+    public Button btn;
+
     public string dialogueText;      // Поле для текста реплики
+    private Coroutine typingCoroutine;
+    private bool isCoroutineStarts = false;
 
     private DialogRoot dialogRoot;
+    private DialogScene currentScene;
     private int currentSceneIndex = 0; // Текущая сцена
     private int currentLineIndex = 0;  // Текущая строка
-
-    void Start()
-    {
-        LoadDialogues();
-        DisplayNextLine();
-    }
-
+    
     // Загрузка JSON-файла
-    private void LoadDialogues()
+    public void LoadDialogues()
     {
         string jsn = Resources.Load<UnityEngine.TextAsset>("dialogues").text;
-        dialogRoot = JsonUtility.FromJson<DialogRoot>(jsn);    
-    }
-
-    // Показ следующей строки диалога
-    public void DisplayNextLine()
-    {
+        dialogRoot = JsonUtility.FromJson<DialogRoot>(jsn);
         if (dialogRoot == null || dialogRoot.dialogs.Count == 0)
         {
             Debug.LogError("Диалоги не загружены или пусты.");
             return;
         }
+    }
 
-        if (currentSceneIndex < dialogRoot.dialogs.Count)
+    public void DisplayScene(string currentDialog)
+    {
+        currentScene = FindScene(currentDialog);
+        currentLineIndex = 0;
+        currentSceneIndex++;
+        SettingDialogeMenu(currentScene);
+        DisplayNextLine(currentScene);
+    }
+
+    private DialogScene FindScene(string currendDialog)
+    {
+        foreach(var scene in dialogRoot.dialogs)
         {
-            var currentScene = dialogRoot.dialogs[currentSceneIndex];
-            background.GetComponent<Image>().sprite = Resources.Load<Sprite>(currentScene.background);
-            if (currentLineIndex < currentScene.lines.Count)
+            if (scene.scene == currendDialog)
             {
-                var line = currentScene.lines[currentLineIndex];
-                SettingDialog(line.character);
-                dialogueText = line.text;
-                currentLineIndex++;
-               
-                textComponent.text = "";
-
-                StartTextAnimation(dialogueText);
+                return scene;
             }
-            else
+        }
+        Debug.Log("Ничего не найдено");
+        return null;
+    }
+    public void Click()
+    {
+        if (isCoroutineStarts) //Если при нажатии работает корутин, он автоматически завершится и выведется полный текст
+        {
+            isCoroutineStarts = false;
+        }       
+        else
+        {
+            DisplayNextLine(currentScene);
+        }
+    }
+
+    // Показ следующей строки диалога
+    private void DisplayNextLine(DialogScene currentScene)
+    {
+        if (currentLineIndex < currentScene.lines.Count)
+        {
+            var line = currentScene.lines[currentLineIndex];
+            currentLineIndex++;
+            SettingDialog(line);
+            dialogueText = line.text;
+            textComponent.text = "";
+
+            typingCoroutine = StartCoroutine(TypeText(dialogueText)); //Запуск вывода текста
+        }
+        else
+        {
+            btn.enabled = false;
+            logicManager.GetComponent<Script>().NextAct();
+        }
+    }
+    private void SettingDialogeMenu(DialogScene currentscene)
+    {
+        btn.enabled = true;
+        background.GetComponent<Image>().sprite = Resources.Load<Sprite>(currentScene.background);
+        character2.GetComponent<SpriteRenderer>().enabled = true;
+        if (currentScene.lines[0].character == "Глеб")
+        {
+            try
             {
-                currentSceneIndex++;
-                currentLineIndex = 0;
-                DisplayNextLine();
+                character2.GetComponent<SpriteRenderer>().sprite = Resources.Load<Sprite>(currentScene.lines[1].icon);
+            }
+            catch {
+                character2.GetComponent<SpriteRenderer>().enabled = false;
             }
         }
         else
         {
-            Debug.Log("Все диалоги завершены.");
+            character2.GetComponent<SpriteRenderer>().sprite = Resources.Load<Sprite>(currentScene.lines[0].icon);
         }
     }
-
-    private void SettingDialog(string character)
-    {
-        if (character == "Глеб")
+    private void SettingDialog(DialogLine line)
+    {   
+        if (line.character == "Глеб")
         {
             characterNameText2.gameObject.SetActive(false);
             characterNameText1.gameObject.SetActive(true);
             character1.GetComponent<SpriteRenderer>().material.color = new Color(1, 1, 1, 1);
             character2.GetComponent<SpriteRenderer>().material.color = new Color(0.6f, 0.6f, 0.6f, 1);
-            characterNameText1.text = character;
+            characterNameText1.text = line.character;
         }
         else
         {
             characterNameText1.gameObject.SetActive(false);
             characterNameText2.gameObject.SetActive(true);
+            character2.GetComponent<SpriteRenderer>().sprite = Resources.Load<Sprite>(line.icon);
             character1.GetComponent<SpriteRenderer>().material.color = new Color(0.6f, 0.6f, 0.6f, 1);
             character2.GetComponent<SpriteRenderer>().material.color = new Color(1, 1, 1, 1);
-            characterNameText2.text = character;
+            characterNameText2.text = line.character;
         }
     }
-    private Coroutine typingCoroutine;
-
-    public void StartTextAnimation(string text)
+    private IEnumerable Transition()
     {
-        // Если анимация уже идёт, останавливаем её
-        if (typingCoroutine != null)
+        dialogMenu.SetActive(false);
+        for (float i = 0; i < 1; i += 0.1f)
         {
-            StopCoroutine(typingCoroutine);
+            background.GetComponent<Image>().color = new Color(i, 1, 1, 1);
+            yield return new WaitForSeconds(0.05f);
         }
-
-        // Запускаем новую анимацию
-        typingCoroutine = StartCoroutine(TypeText(text));
+        
+        for (float i = 1; i > 0; i -= 0.1f)
+        {
+            background.GetComponent<Image>().color = new Color(i, 1, 1, 1);
+            yield return new WaitForSeconds(0.05f);
+        }
+        dialogMenu.SetActive(true);
     }
-
     private IEnumerator TypeText(string text)
     {
+        isCoroutineStarts = true;
         textComponent.text = ""; // Очищаем текст перед началом анимации
 
         foreach (char c in text)
         {
+            if (!isCoroutineStarts) //Вывод текста полностью при повторном нажатии при выполнении корутина
+            {
+                textComponent.text = text; 
+                break;
+            }
             textComponent.text += c; // Добавляем следующий символ
             yield return new WaitForSeconds(0.03f); // Ждём заданное время
         }
 
+        isCoroutineStarts = false;
         typingCoroutine = null; // Анимация завершена
-    }
-    private IEnumerator SlowScale(int h)
-    {
-        for (float q = 1f; q < 2f; q += .1f)
-        {
-            transform.localScale = new Vector2(h, h);
-            yield return new WaitForSeconds(0.05f);
-        }
     }
 }

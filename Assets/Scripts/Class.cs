@@ -7,6 +7,7 @@ using UnityEngine.UI;
 [System.Serializable]
 public class DialogLine
 {
+    public string icon;
     public string character; // Имя персонажа
     public string text;      // Текст реплики
 }
@@ -15,6 +16,7 @@ public class DialogLine
 public class DialogScene
 {
     public string scene;     // Название сцены
+    public string sceneID;
     public string background;
     public List<DialogLine> lines; // Список строк диалога
 }
