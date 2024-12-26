@@ -5,53 +5,39 @@ using System.Net;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class Script: MonoBehaviour
+public static class Script
 {
-    public GameObject dialogMenu;
-    public GameObject pref;
-    private GameObject obj;
-    private DialogueManager dialogueManager;
-    private Dictionary<int, List<string>> arrOfActs;
+    private static Dictionary<int, List<string>> seq = StaticData.arrOfActs;
 
-    // Start is called before the first frame update
-    void Start()
+    public static event Action OnMinigameStart;
+    public static void StartGame()
     {
-        dialogueManager = dialogMenu.GetComponent<DialogueManager>();
-        dialogueManager.LoadDialogues();
         MinigameScript.onCompliete += onComplite;
-        arrOfActs = new Dictionary<int, List<string>>() {
-            {1, new List<string>(){ "dialog", "home" } },
-            {2, new List<string>(){ "dialog", "shelter" } },
-            {3, new List<string>(){ "dialog", "home_return" } },
-            {4, new List<string>(){ "minigame", "" } },
-            {5, new List<string>(){ "dialog", "after_minigame" } },
-            {6, new List<string>(){ "game", "300" } },
-            {7, new List<string>(){ "dialog", "home_again" } },
-            {8, new List<string>(){ "dialog", "lesson" } },
-            {9, new List<string>(){ "game", "1500" } } };
-
         NextAct();
     }
 
-    public void NextAct()
+    public static void NextAct()
     {
-        Execute(arrOfActs[StaticData.currentAct]);
+        DataBaseManager.SaveData();
         StaticData.currentAct++;
+        Execute(seq[StaticData.currentAct]);
     }
-    private void Execute(List<string> commands)
+    private static void Execute(List<string> commands)
     {
         if (commands[0] == "dialog")
         {
-            dialogueManager.DisplayScene(commands[1]);
+            StaticData.currentDialog = commands[1];
+            SceneManager.LoadScene("Dialogs");
         }
         else if (commands[0] == "game") {
+            StaticData.currentDestination = int.Parse(commands[1]);
             SceneManager.LoadScene("Game");
         }
         else {
-            var obj = Instantiate(pref, new Vector3(0, -10, 0), Quaternion.identity);
+            OnMinigameStart.Invoke();
         };
     }
-    private void onComplite()
+    private static void onComplite()
     {
         Scene currentScene = SceneManager.GetActiveScene();
         if (currentScene.name == "Dialogs")

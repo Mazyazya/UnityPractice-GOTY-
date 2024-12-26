@@ -6,17 +6,26 @@ using UnityEngine.SceneManagement;
 
 public class DestinationChecker : MonoBehaviour
 {
-    // Start is called before the first frame update
+    private int destination;
     void Start()
     {
-        MinigameScript.onMoneyChanged += onMoneyChanged;
+        destination = StaticData.CurrentDestination;
+        if (destination != -1)
+        {
+            MinigameScript.onMoneyChanged += onMoneyChanged;
+        }
     }
 
     private void onMoneyChanged(int money)
     {
-        if (money >= 300) {
+        if (money >= destination) {
             Debug.Log("Game complited");
-            SceneManager.LoadScene("Dialogs");
+            Script.NextAct();
         }
+    }
+
+    private void OnDestroy()
+    {
+        MinigameScript.onMoneyChanged -= onMoneyChanged;
     }
 }

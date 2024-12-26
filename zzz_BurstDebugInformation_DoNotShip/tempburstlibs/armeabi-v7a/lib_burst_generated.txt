@@ -38,6 +38,8 @@ Library: C:\Users\Admin\UnityPractice(GOTY)\Temp\BurstOutput\tempburstlibs\armea
 --assembly-defines=Unity.Collections.LowLevel.ILSupport;
 --assembly-defines=Unity.VisualScripting.Antlr3.Runtime;
 --assembly-defines=Unity.Burst.Unsafe;
+--assembly-defines=Mono.Data.Sqlite;
+--assembly-defines=Mono.Data;
 --assembly-defines=System.Runtime;
 --assembly-defines=netstandard;
 --assembly-defines=Mono.Security;

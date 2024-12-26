@@ -12,8 +12,12 @@ public class TextUpdater : MonoBehaviour
         MinigameScript.onMoneyChanged += onMoneyChanged;
         moneyTxt.text = StaticData.money.ToString();
     }
+
+    void OnDestroy() => MinigameScript.onMoneyChanged -= onMoneyChanged;
+   
     private void onMoneyChanged(int money)
     {
         moneyTxt.text = money.ToString();
+        DataBaseManager.SaveMoney();
     }
 }

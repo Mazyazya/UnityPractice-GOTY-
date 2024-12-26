@@ -13,6 +13,7 @@ public class KakaScript : MonoBehaviour, IPointerClickHandler
     private bool isObjectSelected;
 
     void Start() => MinigameScript.onCompliete += onComplite;
+    void OnDestroy() => MinigameScript.onCompliete -= onComplite;
 
     private void onComplite()
     {
@@ -22,8 +23,11 @@ public class KakaScript : MonoBehaviour, IPointerClickHandler
 
     public void OnPointerClick(PointerEventData pointerEventData)
     {
-        isObjectSelected = true;
-        Debug.Log("Game Object Clicked!");
-        obj = Instantiate(pref, new Vector3(0, -10, 0), Quaternion.identity);
+        if (!isObjectSelected)
+        {
+            isObjectSelected = true;
+            Debug.Log("Game Object Clicked!");
+            obj = Instantiate(pref, new Vector3(0, -10, 0), Quaternion.identity);
+        }
     }
 }
